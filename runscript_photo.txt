@@ -1,0 +1,12 @@
+# Open pi zero w
+ssh noalgae@noalgae.local
+
+# run pi cam
+rpicam-still -n -o photo.jpg
+
+# move file to pc
+exit
+scp noalgae@noalgae:~photo.jpg .
+
+# open photo
+open photo.jpg
