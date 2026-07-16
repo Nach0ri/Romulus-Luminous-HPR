@@ -1,5 +1,3 @@
-"""Take five photos using Picamera2 (with a safe fallback if unavailable)."""
-
 import time
 
 try:
@@ -25,7 +23,7 @@ picam2.start()
 
 time.sleep(2)
 
-for i in range(5):
+for i in range(10):
     filename = f"photo_{i:03d}.jpg"
     picam2.capture_file(filename)
 
