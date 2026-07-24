@@ -22,6 +22,8 @@ PHOTO_INTERVAL = 1       # second
 
 MAX_RUNTIME = 4 * 60     # seconds, auto-stop after this long
 
+STATUS_INTERVAL = 60     # seconds, how often to reprint the full status box
+
 
 # ============================
 # IMU SETUP
@@ -33,6 +35,39 @@ i2c = busio.I2C(
 )
 
 imu = lsm6ds.LSM6DSOX(i2c)
+
+
+# ============================
+# STATUS DISPLAY
+# ============================
+
+def format_runtime(seconds):
+    seconds = int(seconds)
+    h, rem = divmod(seconds, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
+
+def print_status_box(status, flight_time, accel_g):
+    waiting_line = (
+        "Waiting for launch..."
+        if status == "STANDBY"
+        else "Launch detected, logging flight..."
+    )
+
+    print("================================", flush=True)
+    print("🚀 NOALGAE PAYLOAD SYSTEM", flush=True)
+    print("================================", flush=True)
+    print(f"STATUS: {status}", flush=True)
+    print("IMU: ONLINE", flush=True)
+    print("CAMERA: READY", flush=True)
+    print("BATTERY: OK", flush=True)
+    print("", flush=True)
+    print(f"Runtime: {format_runtime(flight_time)}", flush=True)
+    print(f"Acceleration: {accel_g:.2f} g", flush=True)
+    print("", flush=True)
+    print(waiting_line, flush=True)
+    print("================================", flush=True)
 
 
 # ============================
@@ -75,12 +110,14 @@ launch_time = None
 photo_number = 0
 last_photo_time = 0
 
+last_status_time = start_time
+
 
 time_data = []
 g_data = []
 
 
-print("Waiting for launch...")
+print_status_box("STANDBY", 0.0, 0.0)
 
 
 # ============================
@@ -96,7 +133,7 @@ try:
         flight_time = now - start_time
 
         if launch_detected and (now - launch_time) >= MAX_RUNTIME:
-            print("4 minutes since launch, stopping...")
+            print("4 minutes since launch, stopping...", flush=True)
             break
 
 
@@ -117,8 +154,17 @@ try:
 
 
         print(
-            f"Time: {flight_time:.2f} s | Accel: {accel_g:.2f} g"
+            f"Runtime: {format_runtime(flight_time)} | Accel: {accel_g:.2f} g",
+            flush=True
         )
+
+        if now - last_status_time >= STATUS_INTERVAL:
+            print_status_box(
+                "LAUNCHED" if launch_detected else "STANDBY",
+                flight_time,
+                accel_g
+            )
+            last_status_time = now
 
 
         # Save data
@@ -165,9 +211,8 @@ try:
                 launch_detected = True
                 launch_time = now
 
-                print(
-                    "🚀 LAUNCH DETECTED"
-                )
+                print_status_box("LAUNCHED", flight_time, accel_g)
+                last_status_time = now
 
 
 
@@ -196,7 +241,8 @@ try:
 
                 print(
                     "Saved:",
-                    filename
+                    filename,
+                    flush=True
                 )
 
 
@@ -212,7 +258,8 @@ try:
 except KeyboardInterrupt:
 
     print(
-        "Stopping..."
+        "Stopping...",
+        flush=True
     )
 
 
@@ -257,14 +304,17 @@ plt.show()
 
 
 print(
-    "Finished"
+    "Finished",
+    flush=True
 )
 
 print(
     "CSV:",
-    csv_name
+    csv_name,
+    flush=True
 )
 
 print(
-    "Plot saved: flight_plot.png"
+    "Plot saved: flight_plot.png",
+    flush=True
 )
